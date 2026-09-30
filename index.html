@@ -135,14 +135,29 @@ import {getFirestore,doc,setDoc,onSnapshot,collection,addDoc,deleteDoc,query,ord
 import {getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ====== GANTI DENGAN KONFIGURASI FIREBASE ANDA ====== */
-const firebaseConfig = {
-  apiKey: "ISI_API_KEY",
-  authDomain: "PROJECT-ID.firebaseapp.com",
-  projectId: "PROJECT-ID",
-  storageBucket: "PROJECT-ID.appspot.com",
-  messagingSenderId: "ISI",
-  appId: "ISI"
-};
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyDoieAZBUuyVskAml_gUF2PywC-GrorIyU",
+    authDomain: "podcast-a-d53fe.firebaseapp.com",
+    projectId: "podcast-a-d53fe",
+    storageBucket: "podcast-a-d53fe.firebasestorage.app",
+    messagingSenderId: "772549312589",
+    appId: "1:772549312589:web:d7421baee66cd9e03e9c04",
+    measurementId: "G-MT8JTFL28E"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
 /* ==================================================== */
 
 const app = initializeApp(firebaseConfig);

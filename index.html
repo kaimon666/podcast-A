@@ -61,13 +61,16 @@ button:hover{transform:translateY(-2px) scale(1.03);filter:brightness(1.12)}
 .msg{color:#ffb3c9;font-size:.9rem;min-height:1.2em;font-weight:600}
 .item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px dashed var(--line)}
 footer{text-align:center;padding:26px;color:var(--mut);border-top:1px solid var(--line);font-size:.9rem}
+.tabs{display:flex;gap:8px;margin-bottom:14px}.tabs button{flex:1;background:#ffffff1f;box-shadow:none}.tabs button.on{background:linear-gradient(90deg,var(--a),var(--b))}
+.otp{text-align:center;font-size:1.8rem;letter-spacing:.5em;font-weight:900}
+.link{background:none;box-shadow:none;color:var(--c);padding:6px;font-weight:700}
 [hidden]{display:none!important}
 </style>
 </head>
 <body>
 <header>
   <div class="brand">🎙️ Suara<span>Kita</span></div>
-  <nav><a id="nv" class="on" onclick="go('')">Penonton</a><a id="na" onclick="go('admin')">Admin</a></nav>
+  <nav><a id="nv" class="on" onclick="go('')">Penonton</a><a id="na" onclick="go('admin')">Admin</a><a id="lo" hidden onclick="logout()">Keluar</a></nav>
 </header>
 
 <!-- ============ BAGIAN PENONTON ============ -->
@@ -79,6 +82,31 @@ footer{text-align:center;padding:26px;color:var(--mut);border-top:1px solid var(
     <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
   </section>
 
+  <div id="gate" class="card login" hidden>
+    <h2 style="margin-top:0">🔑 Masuk untuk Menonton</h2>
+    <div class="tabs"><button id="tl" class="on" onclick="tab('l')">Masuk</button><button id="tr" onclick="tab('r')">Daftar</button></div>
+    <div id="fl">
+      <label>Email</label><input id="ve" type="email" placeholder="email@kamu.com">
+      <label>Password</label><input id="vp" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')loginV()">
+      <button onclick="loginV()" style="width:100%">Masuk & Tonton</button>
+    </div>
+    <div id="fr" hidden>
+      <label>Nama</label><input id="rn" placeholder="Nama lengkap">
+      <label>Email</label><input id="re" type="email" placeholder="email@kamu.com">
+      <label>Password (min. 6 karakter)</label><input id="rp" type="password" placeholder="••••••••">
+      <button id="rb" onclick="reg()" style="width:100%">Kirim Kode OTP ke Email</button>
+    </div>
+    <div id="fo" hidden>
+      <p id="om" style="color:var(--mut);margin-bottom:10px"></p>
+      <label>Kode OTP 6 digit</label><input id="oc" class="otp" maxlength="6" inputmode="numeric" placeholder="000000" onkeydown="if(event.key==='Enter')verify()">
+      <button onclick="verify()" style="width:100%">Verifikasi & Buat Akun</button>
+      <div class="row" style="justify-content:space-between;margin-top:8px"><button class="link" onclick="resend()">Kirim ulang kode</button><button class="link" onclick="tab('r')">Ubah email</button></div>
+    </div>
+    <div class="msg" id="gm" style="margin-top:8px"></div>
+  </div>
+
+  <div id="content" hidden>
+
   <h2>📡 Siaran Langsung</h2>
   <div class="card">
     <span id="lb" class="badge off">OFFLINE</span>
@@ -89,6 +117,7 @@ footer{text-align:center;padding:26px;color:var(--mut);border-top:1px solid var(
 
   <h2>🎧 Rekaman Podcast</h2>
   <div class="grid" id="recs"><p style="color:var(--mut)">Memuat rekaman…</p></div>
+  </div>
 </main>
 
 <!-- ============ BAGIAN ADMIN ============ -->
@@ -100,6 +129,8 @@ footer{text-align:center;padding:26px;color:var(--mut);border-top:1px solid var(
     <div class="msg" id="lm"></div>
     <button onclick="login()" style="width:100%">Masuk</button>
   </div>
+
+  <div id="notadm" class="card login" hidden><h2 style="margin-top:0">🚫 Bukan akun admin</h2><p style="color:var(--mut)">Akun ini terdaftar sebagai penonton. Keluar lalu masuk dengan akun admin.</p><button onclick="logout()" style="margin-top:14px">Keluar</button></div>
 
   <div id="dash" hidden>
     <div class="row" style="justify-content:space-between"><h2 style="margin:0">Dashboard Admin</h2><button class="sec" onclick="logout()">Keluar</button></div>
@@ -132,33 +163,23 @@ footer{text-align:center;padding:26px;color:var(--mut);border-top:1px solid var(
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getFirestore,doc,setDoc,onSnapshot,collection,addDoc,deleteDoc,query,orderBy,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import emailjs from "https://cdn.jsdelivr.net/npm/@emailjs/browser@4/+esm";
 
 /* ====== GANTI DENGAN KONFIGURASI FIREBASE ANDA ====== */
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+const firebaseConfig = {
+  apiKey: "ISI_API_KEY",
+  authDomain: "PROJECT-ID.firebaseapp.com",
+  projectId: "PROJECT-ID",
+  storageBucket: "PROJECT-ID.appspot.com",
+  messagingSenderId: "ISI",
+  appId: "ISI"
+};
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyDoieAZBUuyVskAml_gUF2PywC-GrorIyU",
-    authDomain: "podcast-a-d53fe.firebaseapp.com",
-    projectId: "podcast-a-d53fe",
-    storageBucket: "podcast-a-d53fe.firebasestorage.app",
-    messagingSenderId: "772549312589",
-    appId: "1:772549312589:web:d7421baee66cd9e03e9c04",
-    measurementId: "G-MT8JTFL28E"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
+const ADMIN_EMAIL = "admin@email.com"; // email akun admin (harus sama dengan yang dibuat di Firebase Auth)
+const EMAILJS = { publicKey:"ISI_PUBLIC_KEY", serviceId:"service_tr26y86", templateId:"template_egumfmp" };
 /* ==================================================== */
+emailjs.init({ publicKey: EMAILJS.publicKey });
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app), auth = getAuth(app);
@@ -183,31 +204,75 @@ function route(){
 }
 addEventListener("hashchange",route); route();
 
-/* ---- PENONTON: status live (real-time) ---- */
-onSnapshot(doc(db,"config","live"),s=>{
-  const d = s.exists()? s.data() : {};
-  const on = !!d.isLive && d.url;
-  $("lb").className = "badge "+(on?"live":"off"); $("lb").textContent = on?"LIVE":"OFFLINE";
-  $("lt").textContent = on? d.title : "Belum ada siaran";
-  $("ld").textContent = on? (d.desc||"") : "";
-  $("lp").innerHTML = on? player(d.url) : `<div class="offair" style="width:100%"><div><b>😴</b>Saat ini tidak ada siaran live.<br>Halaman akan otomatis berubah saat siaran dimulai.</div></div>`;
+/* ---- Data (hanya dimuat setelah login) ---- */
+let recData = [], unsubs = [];
+function startListeners(){
+  unsubs.push(onSnapshot(doc(db,"config","live"),s=>{
+    const d = s.exists()? s.data() : {};
+    const on = !!d.isLive && d.url;
+    $("lb").className = "badge "+(on?"live":"off"); $("lb").textContent = on?"LIVE":"OFFLINE";
+    $("lt").textContent = on? d.title : "Belum ada siaran";
+    $("ld").textContent = on? (d.desc||"") : "";
+    $("lp").innerHTML = on? player(d.url) : `<div class="offair" style="width:100%"><div><b>😴</b>Saat ini tidak ada siaran live.<br>Halaman akan otomatis berubah saat siaran dimulai.</div></div>`;
+  }));
+  unsubs.push(onSnapshot(query(collection(db,"recordings"),orderBy("createdAt","desc")),snap=>{
+    recData = snap.docs.map(d=>({id:d.id,...d.data()}));
+    $("recs").innerHTML = recData.length? recData.map(r=>`
+      <div class="card rec">
+        <div class="player" style="margin-top:0">${player(r.url).replace("autoplay=1&","")}</div>
+        <small>${r.createdAt? r.createdAt.toDate().toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"}):""}</small>
+        <h3>${esc(r.title)}</h3><p>${esc(r.desc)}</p>
+      </div>`).join("") : `<p style="color:var(--mut)">Belum ada rekaman.</p>`;
+    renderAdminList();
+  },e=>{ $("recs").innerHTML = `<p style="color:#ff8fa8">Gagal memuat: ${esc(e.message)}</p>`; }));
+}
+
+/* ---- Status login ---- */
+onAuthStateChanged(auth,u=>{
+  unsubs.forEach(f=>f()); unsubs=[];
+  const adm = !!u && u.email===ADMIN_EMAIL;
+  $("gate").hidden = !!u; $("content").hidden = !u; $("lo").hidden = !u;
+  $("loginBox").hidden = !!u; $("notadm").hidden = !(u && !adm); $("dash").hidden = !adm;
+  if(u) startListeners();
 });
 
-/* ---- PENONTON: daftar rekaman ---- */
-let recData = [];
-onSnapshot(query(collection(db,"recordings"),orderBy("createdAt","desc")),snap=>{
-  recData = snap.docs.map(d=>({id:d.id,...d.data()}));
-  $("recs").innerHTML = recData.length? recData.map(r=>`
-    <div class="card rec">
-      <div class="player" style="margin-top:0">${player(r.url).replace("autoplay=1&","")}</div>
-      <small>${r.createdAt? r.createdAt.toDate().toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"}):""}</small>
-      <h3>${esc(r.title)}</h3><p>${esc(r.desc)}</p>
-    </div>`).join("") : `<p style="color:var(--mut)">Belum ada rekaman.</p>`;
-  renderAdminList();
-},e=>{ $("recs").innerHTML = `<p style="color:#ff8fa8">Gagal memuat: ${esc(e.message)}</p>`; });
+/* ---- Akun penonton + OTP EmailJS ---- */
+let pend = null;
+const gm = t => $("gm").textContent = t;
+const sha = async t => [...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t)))].map(b=>b.toString(16).padStart(2,"0")).join("");
+window.tab = t=>{ $("fl").hidden=t!=="l"; $("fr").hidden=t!=="r"; $("fo").hidden=t!=="o"; $("tl").classList.toggle("on",t==="l"); $("tr").classList.toggle("on",t!=="l"); gm(""); };
+async function sendOtp(){
+  const code = String(crypto.getRandomValues(new Uint32Array(1))[0]%900000+100000);
+  pend.hash = await sha(pend.email+code); pend.exp = Date.now()+5*60000; pend.tries = 0;
+  await emailjs.send(EMAILJS.serviceId,EMAILJS.templateId,{to_email:pend.email,to_name:pend.name,otp_code:code,app_name:"SuaraKita"});
+}
+window.reg = async()=>{
+  const name=$("rn").value.trim(), email=$("re").value.trim().toLowerCase(), pw=$("rp").value;
+  if(!name||!/^\S+@\S+\.\S+$/.test(email)) return gm("Isi nama dan email dengan benar.");
+  if(pw.length<6) return gm("Password minimal 6 karakter.");
+  pend = {name,email,pw}; $("rb").disabled = true; gm("Mengirim kode…");
+  try{ await sendOtp(); $("om").textContent="Kode OTP dikirim ke "+email+". Berlaku 5 menit."; $("oc").value=""; tab("o"); }
+  catch(e){ gm("Gagal mengirim email: "+(e.text||e.message)); }
+  $("rb").disabled = false;
+};
+window.resend = async()=>{ if(!pend) return tab("r"); gm("Mengirim ulang…"); try{ await sendOtp(); gm("✅ Kode baru sudah dikirim."); }catch(e){ gm("Gagal: "+(e.text||e.message)); } };
+window.verify = async()=>{
+  if(!pend) return tab("r");
+  if(Date.now()>pend.exp) return gm("Kode kedaluwarsa, kirim ulang kode.");
+  if(++pend.tries>5) return gm("Terlalu banyak percobaan, kirim ulang kode.");
+  if(await sha(pend.email+$("oc").value.trim())!==pend.hash) return gm("Kode salah.");
+  try{
+    const c = await createUserWithEmailAndPassword(auth,pend.email,pend.pw);
+    await setDoc(doc(db,"viewers",c.user.uid),{name:pend.name,email:pend.email,verified:true,createdAt:serverTimestamp()});
+    pend = null;
+  }catch(e){ gm(e.code==="auth/email-already-in-use"? "Email sudah terdaftar, silakan masuk." : "Gagal: "+e.message); }
+};
+window.loginV = async()=>{
+  try{ await signInWithEmailAndPassword(auth,$("ve").value.trim(),$("vp").value); $("vp").value=""; }
+  catch(e){ gm("Email atau password salah."); }
+};
 
-/* ---- ADMIN: login dengan password ---- */
-onAuthStateChanged(auth,u=>{ $("loginBox").hidden = !!u; $("dash").hidden = !u; });
+/* ---- Admin ---- */
 window.login = async()=>{
   $("lm").textContent="";
   try{ await signInWithEmailAndPassword(auth,$("em").value.trim(),$("pw").value); $("pw").value=""; }
